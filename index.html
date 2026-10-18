@@ -1,0 +1,1468 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0b4f88">
+    <meta name="description" content="MedNear — Instant medicine locator and smart medicine scanner for patients and pharmacies.">
+    <title>MedNear — Smart Medicine Finder & Pharmacy Network</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css?v=20261018-real-auth-1">
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js?v=20261018-real-auth-1" defer></script>
+</head>
+<body class="mode-patient">
+    <!-- Top Navigation Bar -->
+    <header class="topbar">
+        <div class="topbar-inner">
+            <div class="topbar-main-row">
+                <a class="brand" href="#top" aria-label="MedNear home">
+                    <span class="brand-mark">✚</span>
+                    <span class="brand-text">med<span class="brand-light">near</span></span>
+                    <span class="brand-badge">2.0</span>
+                </a>
+
+                <div class="topbar-actions">
+                    <!-- Supabase Cloud Connection Indicator -->
+                    <div class="supabase-status-pill" id="supabase-status-pill" title="Connected to Supabase Project: mednear (ytwxequauyhysyqkswxs)">
+                        <span class="supabase-icon">⚡</span>
+                        <span class="supabase-text" id="supabase-status-label">Supabase Cloud</span>
+                        <span class="supabase-pulse-dot" id="supabase-status-dot"></span>
+                    </div>
+
+                    <!-- AI Health & Medicine Chatbot Header Pill -->
+                    <button type="button" class="ai-chat-header-pill" id="btn-header-ai-chat" title="Ask MedNear AI about tablets, stock & genetics">
+                        <span class="ai-chat-sparkle">🤖</span>
+                        <span class="ai-chat-text">AI Medicine Chat</span>
+                        <span class="ai-chat-live-badge">Live</span>
+                    </button>
+
+                    <!-- Role-Based Authentication Bar -->
+                    <div class="auth-bar-actions" id="auth-bar-actions">
+                        <button type="button" class="btn-auth-trigger" id="btn-open-auth" title="Sign in or register your account">
+                            <span class="auth-icon">🔑</span>
+                            <span class="auth-text" id="auth-button-text">Sign In / Register</span>
+                        </button>
+
+                        <div class="user-profile-badge" id="user-profile-badge" hidden title="Click to view My Account & Stored Data">
+                            <div class="user-badge-clickable" id="btn-user-profile-trigger">
+                                <span class="user-avatar" id="header-avatar">👤</span>
+                                <div class="user-info-text">
+                                    <strong id="header-user-name">Guest</strong>
+                                    <span class="role-chip role-patient" id="header-user-role">Patient</span>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-patient-holds" id="btn-patient-my-holds" title="View My Reservations" hidden>
+                                <span>📦 Holds</span>
+                                <span class="holds-count-badge" id="user-holds-count">0</span>
+                            </button>
+                            <button type="button" class="btn-user-action admin-action" id="btn-admin-panel" title="Admin User Control" hidden>
+                                <span>🛡️ Users</span>
+                            </button>
+                            <button type="button" class="btn-logout" id="btn-logout" title="Sign out">✕</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mode Switcher (People Friendly vs Medical Shop Friendly) -->
+            <div class="mode-switch-wrapper" role="radiogroup" aria-label="Application Mode">
+                <button type="button" id="btn-patient-mode" class="mode-tab active" role="radio" aria-checked="true">
+                    <span class="mode-icon">👤</span>
+                    <span class="mode-title">Patient Mode</span>
+                    <span class="mode-sub">Find & Scan</span>
+                </button>
+                <button type="button" id="btn-pharmacy-mode" class="mode-tab" role="radio" aria-checked="false">
+                    <span class="mode-icon">🏪</span>
+                    <span class="mode-title">Medical Shop</span>
+                    <span class="mode-sub">Inventory & Orders</span>
+                    <span class="badge-counter" id="store-order-badge">2</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Notification Toast System -->
+    <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 1: PATIENT / PEOPLE-FRIENDLY VIEW                                    -->
+    <!-- ========================================================================= -->
+    <div id="patient-view" class="app-view">
+        <main id="top">
+            <!-- Hero Banner -->
+            <section class="hero">
+                <div class="hero-content">
+                    <div class="hero-copy">
+                        <div class="eyebrow">
+                            <span class="sparkle">✦</span>
+                            <span>Simple help for every family</span>
+                        </div>
+                        <h1>Find the medicine<br><em>you need, nearby.</em></h1>
+                        <p class="hero-subtext">
+                            Choose one easy option below. Our AI scan reads the medicine pack, then asks you to check the name before you continue.
+                        </p>
+
+                        <!-- Fast Action Buttons -->
+                        <div class="hero-actions">
+                            <button type="button" class="btn-hero-primary" id="btn-hero-scan">
+                                <span class="btn-icon">📷</span>
+                                <div>
+                                    <strong>1. Scan the medicine pack</strong>
+                                    <small>Take a photo or use your camera</small>
+                                </div>
+                            </button>
+                            <a href="#search-section" class="btn-hero-secondary">
+                                <span class="btn-icon">⌕</span>
+                                <div>
+                                    <strong>2. Type the medicine name</strong>
+                                    <small>Use the name written on the pack</small>
+                                </div>
+                            </a>
+                            <button type="button" class="btn-hero-ai" id="btn-hero-ai-chat">
+                                <span class="btn-icon">🤖</span>
+                                <div>
+                                    <strong>3. Ask AI Health Chatbot</strong>
+                                    <small>Check tablet stock, dosage & genetics</small>
+                                </div>
+                            </button>
+                        </div>
+
+                        <!-- Trust Metrics -->
+                        <div class="trust-row">
+                            <div class="trust-item">
+                                <span class="check-icon">✓</span>
+                                <span>Easy for every age</span>
+                            </div>
+                            <div class="trust-item">
+                                <span class="check-icon">✓</span>
+                                <span>AI reads the pack for you</span>
+                            </div>
+                            <div class="trust-item">
+                                <span class="check-icon">✓</span>
+                                <span>Call a pharmacy for delivery</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Interactive Interactive Scanner Teaser Card -->
+                    <div class="hero-card-preview" id="hero-scan-preview">
+                        <div class="preview-glass">
+                            <div class="preview-header">
+                                <span class="live-dot"></span>
+                                <span>AI medicine helper</span>
+                                <span class="ai-tag">CHECK FIRST</span>
+                            </div>
+                            <div class="preview-body">
+                                <div class="preview-scanner-visual">
+                                    <div class="laser-beam"></div>
+                                    <div class="target-box">
+                                        <div class="target-corner tl"></div>
+                                        <div class="target-corner tr"></div>
+                                        <div class="target-corner bl"></div>
+                                        <div class="target-corner br"></div>
+                                        <div class="pill-illustration">💊</div>
+                                    </div>
+                                </div>
+                                <div class="preview-info-box">
+                                    <div class="scan-pill-title">Step 1: <strong>AI reads the name</strong></div>
+                                    <div class="scan-pill-salt">Step 2: You check it is correct.</div>
+                                    <div class="scan-stock-pill">Step 3: Find a nearby pharmacy.</div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn-preview-scan" id="btn-preview-trigger">
+                                <span>Start AI medicine scan</span> <span>→</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Search Panel -->
+            <section id="search-section" class="search-panel" aria-label="Search for medicine">
+                <div class="search-card">
+                    <div class="search-heading">
+                        <div>
+                            <h2>Find a pharmacy near you</h2>
+                            <p>Type the medicine name, then add your area or pincode.</p>
+                        </div>
+                        <div class="search-stats-badge">
+                            <span class="live-pulse"></span>
+                            <span id="partner-count-badge">Find pharmacies near me</span>
+                        </div>
+                    </div>
+
+                    <form id="search-form" class="search-form">
+                        <div class="input-group-row">
+                            <!-- Medicine or Disease Input -->
+                            <div class="input-wrapper medicine-field">
+                                <span class="field-icon" aria-hidden="true">💊</span>
+                                <input id="medicine-input" type="search" placeholder="Type medicine name, for example: Dolo 650" autocomplete="off" aria-label="Medicine name">
+                                <button id="clear-search" class="clear-search" type="button" aria-label="Clear search" hidden>×</button>
+                            </div>
+
+                            <!-- Location Input with Geocoding Suggestions -->
+                            <div class="input-wrapper location-field">
+                                <span class="field-icon" aria-hidden="true">📍</span>
+                                <input id="location-input" type="text" placeholder="Enter your area or pincode (e.g. Indiranagar, 560038)" autocomplete="off" aria-label="Your area or pincode">
+                                <button id="locate-button" class="locate-button" type="button" title="Use current GPS location" aria-label="Use current GPS location">
+                                    <span class="gps-icon">◎</span>
+                                    <span class="gps-label">Use my location</span>
+                                </button>
+                                <!-- Geocoding Suggestions Dropdown -->
+                                <div id="location-suggestions-dropdown" class="location-suggestions-dropdown" hidden></div>
+                            </div>
+
+                            <!-- Submit & Scan Buttons -->
+                            <button class="search-button" type="submit">
+                                <span>Find pharmacies</span>
+                                <span aria-hidden="true">→</span>
+                            </button>
+
+                            <button type="button" class="scan-camera-btn" id="btn-form-scanner" title="Scan package or prescription">
+                                <span aria-hidden="true">📷</span>
+                                <span>AI scan</span>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Popular & Quick Search Chips (Medicines + Diseases from PMC5570547) -->
+                    <div class="chips-container">
+                        <span class="chips-label">Try an example:</span>
+                        <div class="chips-scroll">
+                            <button type="button" class="chip chip-disease" data-disease="gerd">🩺 GERD (Acid Reflux)</button>
+                            <button type="button" class="chip chip-disease" data-disease="cad">❤️ CAD / Heart Disease</button>
+                            <button type="button" class="chip chip-disease" data-disease="hyperlipidemia">🩸 High Cholesterol</button>
+                            <button type="button" class="chip chip-disease" data-disease="pain">⚡ Pain / Musculoskeletal</button>
+                            <button type="button" class="chip" data-medicine="Pantoprazole">Pantoprazole 40mg</button>
+                            <button type="button" class="chip" data-medicine="Clopidogrel">Clopidogrel 75mg</button>
+                            <button type="button" class="chip" data-medicine="Simvastatin">Simvastatin 40mg</button>
+                            <button type="button" class="chip" data-medicine="Dolo 650">Dolo 650 / Paracetamol</button>
+                            <button type="button" class="chip" data-medicine="Augmentin">Augmentin 625 Duo</button>
+                        </div>
+                    </div>
+
+                    <p class="form-message" id="form-message" role="status" aria-live="polite"></p>
+                </div>
+            </section>
+
+            <!-- PMC5570547: Disease-Drug Pharmacogenomic Comparative Prescribing Menu -->
+            <section id="pgx-disease-section" class="pgx-disease-section" hidden>
+                <div class="pgx-disease-card">
+                    <div class="pgx-disease-header">
+                        <div class="pgx-title-wrap">
+                            <span class="dna-icon">🧬</span>
+                            <div>
+                                <h3 id="pgx-disease-title">Disease–Drug Comparative Menu: GERD</h3>
+                                <p>Pharmacogenomic Decision Support based on <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC5570547/" target="_blank" rel="noopener noreferrer">PMC5570547 (CPIC / FDA Guidelines)</a></p>
+                            </div>
+                        </div>
+                        <div class="pgx-legend">
+                            <span class="legend-item"><span class="traffic-dot green"></span> Favorable (Green)</span>
+                            <span class="legend-item"><span class="traffic-dot yellow"></span> Caution (Yellow)</span>
+                            <span class="legend-item"><span class="traffic-dot red"></span> High Risk (Red)</span>
+                        </div>
+                    </div>
+                    <div class="pgx-table-responsive">
+                        <table class="pgx-disease-table">
+                            <thead>
+                                <tr>
+                                    <th>Prescription Drug</th>
+                                    <th>Gene Biomarker</th>
+                                    <th>PGx Safety Status</th>
+                                    <th>Clinical Prescribing Guidance (PMC5570547)</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pgx-disease-table-body">
+                                <!-- Populated dynamically from PMC5570547 data -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Patient Friendly Medicine Details & Cheaper Substitute Guide -->
+            <section id="medicine-guide-section" class="medicine-guide-section" hidden>
+                <div class="guide-card">
+                    <div class="guide-header">
+                        <div class="guide-badge">
+                            <span class="badge-icon">ℹ️</span>
+                            <span>Medicine Information & Patient Guide</span>
+                        </div>
+                        <span class="rx-badge" id="guide-rx-status">Prescription Required</span>
+                    </div>
+
+                    <div class="guide-grid">
+                        <div class="guide-info">
+                            <h3 id="guide-med-name">Augmentin 625 Duo</h3>
+                            <div class="guide-composition">
+                                <strong>Active Salt:</strong> <span id="guide-med-salt">Amoxicillin (500mg) + Clavulanic Acid (125mg)</span>
+                            </div>
+                            <p class="guide-use" id="guide-med-usage">Used for bacterial infections of respiratory tract, lungs, and ear/throat.</p>
+                            <div class="guide-safety-note" id="guide-med-safety">
+                                <span class="alert-icon">⚠️</span>
+                                <span>Always complete the prescribed course. Take after food to reduce gastric upset.</span>
+                            </div>
+                        </div>
+
+                        <!-- People-Friendly Money Saver: Generic Alternatives -->
+                        <div class="guide-substitutes">
+                            <div class="substitute-header">
+                                <span class="piggy-icon">💰</span>
+                                <div>
+                                    <h4>Affordable Generic Alternatives</h4>
+                                    <small>Same active salt, typically 40%–70% cheaper</small>
+                                </div>
+                            </div>
+                            <div class="substitutes-list" id="guide-substitutes-list">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- PMC5570547: Pharmacogenomic (PGx) Safety Card -->
+                        <div class="guide-pgx-card" id="guide-pgx-card">
+                            <div class="pgx-card-header">
+                                <span class="dna-symbol">🧬</span>
+                                <div>
+                                    <h4>Pharmacogenomic (PGx) Prescribing Safety</h4>
+                                    <small>Precision medicine CDS from <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC5570547/" target="_blank" rel="noopener noreferrer">PMC5570547 (CPIC / FDA)</a></small>
+                                </div>
+                            </div>
+                            <div class="pgx-card-body">
+                                <div class="pgx-status-row">
+                                    <span class="pgx-badge green" id="guide-pgx-badge">🟢 Favorable Response</span>
+                                    <span class="pgx-gene-tag" id="guide-pgx-gene">Gene: None</span>
+                                </div>
+                                <p class="pgx-advice" id="guide-pgx-advice">Standard therapeutic dosing recommended. Minimal germline variability.</p>
+                                <div class="pgx-evidence-line">
+                                    <strong>Evidence Standard:</strong> <span id="guide-pgx-evidence">CPIC Level-A · FDA PGx Biomarker · GPS Level 1</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section id="results-section" class="results-section" aria-live="polite">
+                <div class="results-toolbar">
+                    <div class="results-title-group">
+                        <div class="results-title-row">
+                            <span class="result-pulse"></span>
+                            <h2 id="results-title">Available near you</h2>
+                        </div>
+                        <p id="results-caption">Use your live location to find real nearby pharmacies.</p>
+                    </div>
+
+                    <div class="results-controls">
+                        <!-- Filters -->
+                        <div class="filter-row" role="group" aria-label="Filter results">
+                            <button class="filter-chip active" type="button" data-filter="all">
+                                All (<span id="count-all">0</span>)
+                            </button>
+                            <button class="filter-chip" type="button" data-filter="available">
+                                🟢 In Stock (<span id="count-available">0</span>)
+                            </button>
+                            <button class="filter-chip" type="button" data-filter="limited">
+                                🟡 Limited Stock
+                            </button>
+                            <label class="toggle-control">
+                                <input type="checkbox" id="open-now">
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-label">Open Now</span>
+                            </label>
+                            <label class="toggle-control">
+                                <input type="checkbox" id="filter-24-hours">
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-label">24/7 Only</span>
+                            </label>
+                        </div>
+
+                        <!-- Sort wrap -->
+                        <div class="sort-wrap">
+                            <label for="sort-select">Sort by:</label>
+                            <select id="sort-select" class="sort-select">
+                                <option value="distance">Nearest first (Distance)</option>
+                                <option value="availability">Highest availability</option>
+                                <option value="price">Lowest estimated price</option>
+                                <option value="name">Name A–Z</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results List Container -->
+                <div id="results-list" class="results-list"></div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="empty-state" hidden>
+                    <div class="empty-icon">🔍</div>
+                    <h3>Find pharmacies near you</h3>
+                    <p>Share your live location to see nearby pharmacies. Call to confirm medicine stock and delivery.</p>
+                    <div class="empty-actions">
+                        <button id="reset-filters" class="btn-pill" type="button">Reset All Filters</button>
+                        <button id="empty-scan-btn" class="btn-pill-primary" type="button">Scan Strip Instead</button>
+                    </div>
+                </div>
+
+                <div class="results-footnote">
+                    <span class="footnote-icon">ⓘ</span>
+                    <span>With your permission, MedNear uses live location to find pharmacies nearby. Pharmacy listings use <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap contributors</a> data; directions can open in Google Maps or OpenStreetMap. Listings may be incomplete, and stock, price, opening hours and delivery are not confirmed; call before travelling.</span>
+                </div>
+            </section>
+
+            <!-- How It Works Section -->
+            <section id="how-it-works" class="how-section">
+                <div class="section-heading">
+                    <span class="eyebrow">SIMPLE & COMPASSIONATE CARE</span>
+                    <h2>How MedNear works for you</h2>
+                </div>
+                <div class="steps-grid">
+                    <article class="step-card">
+                        <div class="step-top">
+                            <span class="step-number">01</span>
+                            <div class="step-icon mint">📷</div>
+                        </div>
+                        <h3>Scan or Search</h3>
+                        <p>Take a clear photo of a medicine pack. The scanner reads printed text and suggests a catalog match for you to check.</p>
+                    </article>
+                    <article class="step-card">
+                        <div class="step-top">
+                            <span class="step-number">02</span>
+                            <div class="step-icon peach">📍</div>
+                        </div>
+                        <h3>See nearby pharmacies</h3>
+                        <p>View pharmacies mapped near your current location and open directions.</p>
+                    </article>
+                    <article class="step-card">
+                        <div class="step-top">
+                            <span class="step-number">03</span>
+                            <div class="step-icon lilac">🤝</div>
+                        </div>
+                        <h3>Call to confirm</h3>
+                        <p>Ask about medicine stock, price and delivery before travelling.</p>
+                    </article>
+                </div>
+            </section>
+
+            <!-- Community & Safety Notice -->
+            <section id="about-stock" class="disclaimer-banner">
+                <div class="disclaimer-icon">🛡️</div>
+                <div class="disclaimer-body">
+                    <h3>Check medicine details carefully</h3>
+                    <p>Scanner text is only a suggestion. Check the package and ask a pharmacist before taking medicine. Location listings do not confirm licensing or stock.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 2: PHARMACY PARTNER VIEW (MEDICAL SHOP FRIENDLY)                    -->
+    <!-- ========================================================================= -->
+    <div id="pharmacy-view" class="app-view" hidden>
+        <main class="store-portal-container">
+            <!-- Store Header Bar -->
+            <div class="store-header">
+                <div class="store-profile">
+                    <div class="store-avatar">🏥</div>
+                    <div>
+                        <div class="store-badge-row">
+                            <h2>Green Cross Pharmacy</h2>
+                            <span class="store-verified-tag">Demo account</span>
+                        </div>
+                        <p class="store-address">Sample workspace only. Connect a real pharmacy account to manage live stock.</p>
+                    </div>
+                </div>
+
+                <div class="store-status-toggle">
+                    <div class="toggle-group">
+                        <span class="status-indicator-live"></span>
+                        <label for="store-open-toggle">Store Status:</label>
+                        <select id="store-open-toggle" class="store-select">
+                            <option value="open">🟢 Accepting Customer Orders</option>
+                            <option value="busy">🟡 High Rush (Walk-in only)</option>
+                            <option value="closed">🔴 Closed</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pharmacy Dashboard Metrics -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-icon">📦</div>
+                    <div class="metric-value" id="metric-total-items">148</div>
+                    <div class="metric-label">Medicines in Catalog</div>
+                </div>
+                <div class="metric-card alert">
+                    <div class="metric-icon">⚠️</div>
+                    <div class="metric-value" id="metric-low-stock">4</div>
+                    <div class="metric-label">Low / Critical Stock</div>
+                </div>
+                <div class="metric-card highlight">
+                    <div class="metric-icon">⏳</div>
+                    <div class="metric-value" id="metric-holds-count">2</div>
+                    <div class="metric-label">Active Customer Hold Requests</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">👀</div>
+                    <div class="metric-value">312</div>
+                    <div class="metric-label">Nearby Patient Searches Today</div>
+                </div>
+            </div>
+
+            <!-- Main Portal Tabs -->
+            <div class="portal-main-grid">
+                <!-- Left/Main Column: Quick Inventory Manager -->
+                <div class="inventory-section">
+                    <div class="section-card">
+                        <div class="section-card-header">
+                            <div>
+                                <h3>Quick Inventory & Stock Updater</h3>
+                                <p>Medical Shop Friendly: update stock with a single click or scan barcode at counter</p>
+                            </div>
+                            <div class="header-action-btns">
+                                <button type="button" class="btn-store-scan" id="btn-store-scan-barcode">
+                                    <span>📷 Counter Barcode Scan</span>
+                                </button>
+                                <button type="button" class="btn-add-item" id="btn-add-inventory-modal">
+                                    <span>+ Add New Medicine</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Inventory Filter & Search Bar -->
+                        <div class="inventory-toolbar">
+                            <div class="search-input-box">
+                                <span class="search-icon">🔍</span>
+                                <input type="text" id="inventory-search-input" placeholder="Quick find medicine in your stock...">
+                            </div>
+                            <div class="inventory-filter-pills">
+                                <button type="button" class="inv-filter active" data-inv-filter="all">All Items</button>
+                                <button type="button" class="inv-filter" data-inv-filter="available">In Stock</button>
+                                <button type="button" class="inv-filter" data-inv-filter="limited">Low Stock</button>
+                                <button type="button" class="inv-filter" data-inv-filter="unavailable">Out of Stock</button>
+                            </div>
+                        </div>
+
+                        <!-- Fast Inventory Table -->
+                        <div class="table-responsive">
+                            <table class="inventory-table">
+                                <thead>
+                                    <tr>
+                                        <th>Medicine & Composition</th>
+                                        <th>Rack / Shelf</th>
+                                        <th>Stock Status (1-Tap Toggle)</th>
+                                        <th>Units</th>
+                                        <th>Price (₹)</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="inventory-table-body">
+                                    <!-- Populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Customer Reservation Holds & High Demand Alerts -->
+                <div class="orders-sidebar">
+                    <!-- Customer Hold Requests -->
+                    <div class="section-card holds-card">
+                        <div class="section-card-header compact">
+                            <div>
+                                <h4>Customer Hold Requests</h4>
+                                <small>Patients heading to your store</small>
+                            </div>
+                            <span class="badge-pulse" id="holds-live-badge">Live</span>
+                        </div>
+
+                        <div class="holds-list" id="holds-list-container">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Local Patient Demand Trends -->
+                    <div class="section-card demand-card">
+                        <div class="section-card-header compact">
+                            <div>
+                                <h4>High Area Demand Alerts</h4>
+                                <small>What patients are searching nearby</small>
+                            </div>
+                            <span class="trend-icon">📈</span>
+                        </div>
+                        <ul class="demand-list">
+                            <li>
+                                <div class="demand-info">
+                                    <strong>Augmentin 625 Duo</strong>
+                                    <small>48 searches in last 2 hours</small>
+                                </div>
+                                <span class="demand-status safe">Stock Good (24)</span>
+                            </li>
+                            <li>
+                                <div class="demand-info">
+                                    <strong>Cetirizine 10mg</strong>
+                                    <small>32 searches in last 2 hours</small>
+                                </div>
+                                <span class="demand-status warning">Only 3 left</span>
+                            </li>
+                            <li>
+                                <div class="demand-info">
+                                    <strong>Budecort Inhaler 200</strong>
+                                    <small>29 searches in last 2 hours</small>
+                                </div>
+                                <span class="demand-status danger">Out of stock!</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 1: MEDICINE & PRESCRIPTION SCANNER (PATIENT & PHARMACIST)           -->
+    <!-- ========================================================================= -->
+    <div id="scanner-modal" class="modal-backdrop" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="scanner-modal-title">
+        <div class="modal-window scanner-modal-window">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <span class="scanner-icon">📷</span>
+                    <div>
+                        <h3 id="scanner-modal-title">Medicine Package Scanner</h3>
+                        <p>Align the printed medicine name and strength with the camera</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close-modal" id="btn-close-scanner" aria-label="Close Scanner">✕</button>
+            </div>
+
+            <div class="scanner-modal-body">
+                <!-- Scanner Mode Tabs -->
+                <div class="scanner-tabs">
+                    <button type="button" class="scanner-tab active" data-tab="camera">
+                        <span>📹 Live Camera</span>
+                    </button>
+                    <button type="button" class="scanner-tab" data-tab="upload">
+                        <span>📁 Upload Package Photo</span>
+                    </button>
+                    <button type="button" class="scanner-tab" data-tab="presets">
+                        <span>⚡ Test With Sample Prescriptions</span>
+                    </button>
+                </div>
+
+                <!-- Tab 1: Live Camera View -->
+                <div id="scanner-view-camera" class="scanner-tab-view">
+                    <div class="camera-viewport-container">
+                        <!-- Video stream element -->
+                        <video id="scanner-video" playsinline autoplay muted></video>
+                        <!-- Hidden processing canvas -->
+                        <canvas id="scanner-canvas" hidden></canvas>
+
+                        <!-- Viewfinder overlay -->
+                        <div class="viewfinder-overlay">
+                            <div class="scan-laser-line" id="laser-line"></div>
+                            <div class="viewfinder-frame">
+                                <div class="corner-bracket top-left"></div>
+                                <div class="corner-bracket top-right"></div>
+                                <div class="corner-bracket bottom-left"></div>
+                                <div class="corner-bracket bottom-right"></div>
+                                <div class="guide-text">Align the printed medicine name and strength here</div>
+                            </div>
+                        </div>
+
+                        <!-- Camera Fallback Banner if permission denied or no camera -->
+                        <div id="camera-fallback" class="camera-fallback" hidden>
+                            <span class="fallback-icon">📷</span>
+                            <p id="camera-fallback-msg">Camera access unavailable or not granted. Upload a clear photo of the printed medicine name and strength, or try a sample.</p>
+                            <button type="button" class="btn-secondary" id="btn-switch-to-upload">Upload Picture Instead</button>
+                        </div>
+                    </div>
+
+                    <div class="camera-controls">
+                        <button type="button" class="btn-scanner-action" id="btn-capture-scan">
+                            <span class="shutter-circle"></span>
+                            <span>Capture & Analyze</span>
+                        </button>
+                        <button type="button" class="btn-scanner-tool" id="btn-flip-camera" title="Flip Camera">
+                            🔄 Flip
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Upload Photo / File -->
+                <div id="scanner-view-upload" class="scanner-tab-view" hidden>
+                    <div class="upload-dropzone" id="upload-dropzone">
+                        <input type="file" id="scanner-file-input" accept="image/*" class="file-hidden-input">
+                        <div class="dropzone-content">
+                            <span class="upload-icon">📸</span>
+                            <h4>Upload a photo of the medicine package</h4>
+                            <p>Drag and drop image here or <strong>browse files</strong></p>
+                            <span class="file-hint">Supports JPEG, PNG, HEIC from mobile camera</span>
+                        </div>
+                    </div>
+                    <div id="upload-preview-container" class="upload-preview-container" hidden>
+                        <img id="upload-preview-img" alt="Preview of uploaded medicine" src="">
+                        <div class="preview-actions">
+                            <button type="button" class="btn-pill-primary" id="btn-analyze-upload">Analyze Image Now</button>
+                            <button type="button" class="btn-pill" id="btn-clear-upload">Choose Another</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Presets & Demo Samples for Easy Testing -->
+                <div id="scanner-view-presets" class="scanner-tab-view" hidden>
+                    <div class="presets-explainer">
+                        <p>No medicine strip nearby? Tap any real-world sample medicine or prescription below to simulate instant scanner detection:</p>
+                    </div>
+                    <div class="presets-grid">
+                        <button type="button" class="preset-card" data-preset="augmentin">
+                            <div class="preset-icon">💊</div>
+                            <div class="preset-details">
+                                <strong>Augmentin 625 Duo</strong>
+                                <small>Amoxicillin + Clavulanic Acid 625mg</small>
+                                <span class="preset-tag">Antibiotic</span>
+                            </div>
+                        </button>
+                        <button type="button" class="preset-card" data-preset="dolo">
+                            <div class="preset-icon">🌡️</div>
+                            <div class="preset-details">
+                                <strong>Dolo 650</strong>
+                                <small>Paracetamol 650mg Blister Pack</small>
+                                <span class="preset-tag">Fever & Pain</span>
+                            </div>
+                        </button>
+                        <button type="button" class="preset-card" data-preset="metformin">
+                            <div class="preset-icon">🩸</div>
+                            <div class="preset-details">
+                                <strong>Glycomet 500 SR</strong>
+                                <small>Metformin HCl 500mg Strip</small>
+                                <span class="preset-tag">Diabetes Care</span>
+                            </div>
+                        </button>
+                        <button type="button" class="preset-card" data-preset="cetirizine">
+                            <div class="preset-icon">🤧</div>
+                            <div class="preset-details">
+                                <strong>Alerid 10mg</strong>
+                                <small>Cetirizine Hydrochloride 10mg</small>
+                                <span class="preset-tag">Allergy / Cold</span>
+                            </div>
+                        </button>
+                        <button type="button" class="preset-card" data-preset="clopidogrel">
+                            <div class="preset-icon">⚠️</div>
+                            <div class="preset-details">
+                                <strong>Clopidogrel 75mg (Plavix)</strong>
+                                <small>Antiplatelet · CYP2C19 High-Risk Alert</small>
+                                <span class="preset-tag" style="background: #fee2e2; color: #991b1b;">PMC5570547 Red Light</span>
+                            </div>
+                        </button>
+                        <button type="button" class="preset-card" data-preset="pantoprazole">
+                            <div class="preset-icon">💊</div>
+                            <div class="preset-details">
+                                <strong>Pantoprazole 40mg (Pan 40)</strong>
+                                <small>GERD / PPI · CYP2C19 Caution Alert</small>
+                                <span class="preset-tag" style="background: #fef3c7; color: #92400e;">PMC5570547 Yellow Light</span>
+                            </div>
+                        </button>
+                        <button type="button" class="preset-card" data-preset="simvastatin">
+                            <div class="preset-icon">🩸</div>
+                            <div class="preset-details">
+                                <strong>Simvastatin 40mg (Zocor)</strong>
+                                <small>Statin · SLCO1B1 Myopathy Alert</small>
+                                <span class="preset-tag" style="background: #fee2e2; color: #991b1b;">PMC5570547 Red Light</span>
+                            </div>
+                        </button>
+                        <button type="button" class="preset-card" data-preset="prescription">
+                            <div class="preset-icon">📝</div>
+                            <div class="preset-details">
+                                <strong>Doctor's Prescription Rx</strong>
+                                <small>Handwritten note with Azithromycin 500mg</small>
+                                <span class="preset-tag">Doctor Rx</span>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Scan Analysis Indicator -->
+                <div id="scan-analyzing" class="scan-analyzing" hidden>
+                    <div class="spinner-pulse"></div>
+                    <h4 id="analyzing-status-text">Detecting active formulation & salts...</h4>
+                    <p>Reading the printed text and checking for a single matching medicine in the catalog...</p>
+                </div>
+
+                <!-- Scan Results Card -->
+                <div id="scan-result-card" class="scan-result-card" hidden>
+                    <div class="result-success-header">
+                        <span class="success-badge" id="scan-result-label">✓ OCR Candidate</span>
+                        <span class="confidence-badge" id="scan-confidence">Verify text</span>
+                    </div>
+
+                    <p id="scan-ocr-text" class="scan-ocr-text" hidden></p>
+                    <p id="scan-review-prompt" class="scan-review-prompt" hidden>Check the medicine name and strength against the package before continuing.</p>
+
+                    <div class="detected-med-details">
+                        <h3 id="detected-name">Augmentin 625 Duo</h3>
+                        <div class="detected-salt-row">
+                            <strong>Generic Salt:</strong>
+                            <span id="detected-salt">Amoxicillin (500mg) + Clavulanic Acid (125mg)</span>
+                        </div>
+                        <div class="detected-meta-row">
+                            <span>Form: <strong id="detected-form">Tablet (Strip of 10)</strong></span>
+                            <span>Category: <strong id="detected-category">Antibiotic</strong></span>
+                            <span>Rx Class: <strong id="detected-rx-class">Schedule H</strong></span>
+                        </div>
+                        <p class="detected-desc" id="detected-desc">Commonly prescribed for throat, respiratory, ear and skin bacterial infections.</p>
+
+                        <!-- PMC5570547 Pharmacogenomic Alert Box in Scanner -->
+                        <div class="scan-pgx-alert" id="scan-pgx-alert">
+                            <div class="scan-pgx-header">
+                                <span class="dna-icon-sm">🧬</span>
+                                <div>
+                                    <strong id="scan-pgx-gene-badge">Gene: CYP2C19</strong>
+                                    <small id="scan-pgx-source">CPIC / FDA PGx Standard (PMC5570547)</small>
+                                </div>
+                                <span class="scan-pgx-pill green" id="scan-pgx-pill">🟢 Favorable</span>
+                            </div>
+                            <p class="scan-pgx-note" id="scan-pgx-note">Standard therapeutic response expected. Minimal adverse genetic risk.</p>
+                        </div>
+                    </div>
+
+                    <div class="detected-actions">
+                        <button type="button" class="btn-confirm-search" id="btn-apply-scanned-search">
+                            <span>Find in Nearby Pharmacies</span>
+                            <span>→</span>
+                        </button>
+                        <button type="button" class="btn-rescan" id="btn-rescan">
+                            <span>Scan Another</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 2: CUSTOMER HOLD / RESERVE MEDICINE REQUEST                          -->
+    <!-- ========================================================================= -->
+    <div id="hold-modal" class="modal-backdrop" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="hold-modal-title">
+        <div class="modal-window">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <span class="hold-icon">📦</span>
+                    <div>
+                        <h3 id="hold-modal-title">Reserve Medicine (Free 30-min Hold)</h3>
+                        <p id="hold-modal-subtitle">Keep your medicine reserved until you arrive at the store</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close-modal" id="btn-close-hold" aria-label="Close Reserve Modal">✕</button>
+            </div>
+
+            <form id="hold-request-form" class="modal-form">
+                <div class="hold-summary-box">
+                    <div class="summary-line">
+                        <span class="label">Medicine:</span>
+                        <strong id="hold-med-name">Augmentin 625 Duo</strong>
+                    </div>
+                    <div class="summary-line">
+                        <span class="label">Pharmacy:</span>
+                        <strong id="hold-store-name">Green Cross Pharmacy</strong>
+                    </div>
+                    <div class="summary-line">
+                        <span class="label">Estimated Price:</span>
+                        <strong id="hold-est-price" class="price-highlight">₹182</strong>
+                    </div>
+                </div>
+
+                <div class="form-fields">
+                    <label class="field-label">
+                        <span>Your Full Name *</span>
+                        <input type="text" id="hold-patient-name" placeholder="e.g. Leela Sharma" required>
+                    </label>
+
+                    <label class="field-label">
+                        <span>Mobile Phone (for Chemist SMS Confirmation) *</span>
+                        <input type="tel" id="hold-patient-phone" placeholder="e.g. +91 98765 43210" required>
+                    </label>
+
+                    <div class="form-row-2">
+                        <label class="field-label">
+                            <span>Packs / Strips *</span>
+                            <select id="hold-quantity">
+                                <option value="1">1 Strip / Unit</option>
+                                <option value="2">2 Strips / Units</option>
+                                <option value="3">3 Strips / Units</option>
+                            </select>
+                        </label>
+                        <label class="field-label">
+                            <span>Estimated Arrival *</span>
+                            <select id="hold-eta">
+                                <option value="15 min">Within 15 minutes</option>
+                                <option value="30 min">Within 30 minutes</option>
+                                <option value="45 min">Within 45 minutes</option>
+                            </select>
+                        </label>
+                    </div>
+
+                    <label class="field-label">
+                        <span>Instant OTP & Directions Delivery Via *</span>
+                        <select id="hold-channel">
+                            <option value="sms">📱 SMS (Twilio Programmable Messaging)</option>
+                            <option value="whatsapp">💬 WhatsApp (Twilio WhatsApp Business API)</option>
+                            <option value="both">📲 Both SMS & WhatsApp</option>
+                        </select>
+                    </label>
+
+                    <div class="hold-notice">
+                        <span class="notice-icon">✓</span>
+                        <span>Zero upfront charge. Chemist will hold your stock behind the counter for 30 minutes. You will receive an instant verification OTP and GPS directions link.</span>
+                    </div>
+                </div>
+
+                <div class="modal-footer-btns">
+                    <button type="button" class="btn-secondary" id="btn-cancel-hold">Cancel</button>
+                    <button type="submit" class="btn-primary" id="btn-submit-hold">Confirm 30-Min Hold & Send OTP</button>
+                </div>
+            </form>
+
+            <!-- Success Confirmation with OTP & Directions -->
+            <div id="hold-success-view" class="modal-success-pane" hidden>
+                <div class="hold-success-header">
+                    <span class="success-icon-large">🎉</span>
+                    <h4>Reservation Confirmed & Held Behind Counter!</h4>
+                    <p>Stock has been secured for 30 minutes. Chemist is notified.</p>
+                </div>
+
+                <div class="otp-display-card">
+                    <span class="otp-caption">Show this Counter Pickup OTP upon arrival:</span>
+                    <div class="otp-digits" id="success-otp-code">----</div>
+                    <small class="otp-subtext">The chemist will verify this 4-digit code before dispensing.</small>
+                </div>
+
+                <div class="directions-action-card">
+                    <div class="directions-header">
+                        <strong>📍 Pharmacy Location & Contact</strong>
+                        <span id="success-pharm-phone" class="phone-chip">+91 80 4000 1101</span>
+                    </div>
+                    <p id="success-pharm-info" style="font-size:0.85rem; color:#475569; margin: 4px 0 10px;">Green Cross Pharmacy · 12, MG Road, Bengaluru Central</p>
+                    <a id="success-directions-link" href="#" target="_blank" rel="noopener noreferrer" class="btn-directions-nav">
+                        🗺️ Open Turn-by-Turn GPS Directions in Google Maps
+                    </a>
+                </div>
+
+                <div class="dispatched-preview-card">
+                    <div class="preview-header">
+                        <span>📲 Dispatched Message Preview</span>
+                        <span id="success-dispatch-badge" class="badge-delivered">Delivered via Twilio</span>
+                    </div>
+                    <pre id="success-dispatch-text" class="dispatch-msg-body"></pre>
+                </div>
+
+                <div class="modal-footer-btns" style="margin-top: 1.25rem;">
+                    <button type="button" class="btn-primary" id="btn-done-hold" style="width: 100%;">Done & View in My Reservations</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 3: PHARMACY ADD NEW MEDICINE TO INVENTORY                           -->
+    <!-- ========================================================================= -->
+    <div id="add-item-modal" class="modal-backdrop" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="add-item-title">
+        <div class="modal-window">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <span class="add-icon">➕</span>
+                    <div>
+                        <h3 id="add-item-title">Add Medicine to Store Inventory</h3>
+                        <p>Keep your catalog synchronized so local patients can find you</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close-modal" id="btn-close-add-item" aria-label="Close Add Modal">✕</button>
+            </div>
+
+            <form id="add-item-form" class="modal-form">
+                <div class="form-fields">
+                    <label class="field-label">
+                        <span>Medicine Brand Name *</span>
+                        <input type="text" id="new-item-name" placeholder="e.g. Azithral 500" required>
+                    </label>
+
+                    <label class="field-label">
+                        <span>Generic Chemical Composition / Salt *</span>
+                        <input type="text" id="new-item-salt" placeholder="e.g. Azithromycin 500mg" required>
+                    </label>
+
+                    <div class="form-row-2">
+                        <label class="field-label">
+                            <span>Current Units in Stock *</span>
+                            <input type="number" id="new-item-units" min="0" value="20" required>
+                        </label>
+                        <label class="field-label">
+                            <span>Shelf / Rack Location</span>
+                            <input type="text" id="new-item-rack" placeholder="e.g. Shelf B-4">
+                        </label>
+                    </div>
+
+                    <div class="form-row-2">
+                        <label class="field-label">
+                            <span>Retail Price (₹) *</span>
+                            <input type="number" id="new-item-price" min="1" step="0.5" value="120" required>
+                        </label>
+                        <label class="field-label">
+                            <span>Initial Stock Status *</span>
+                            <select id="new-item-status">
+                                <option value="available">In Stock</option>
+                                <option value="limited">Limited Stock</option>
+                                <option value="unavailable">Out of Stock</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="modal-footer-btns">
+                    <button type="button" class="btn-secondary" id="btn-cancel-add-item">Cancel</button>
+                    <button type="submit" class="btn-primary">Add to Inventory</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 4: AUTHENTICATION & SECURE ACCOUNT ACCESS                           -->
+    <!-- ========================================================================= -->
+    <div id="auth-modal" class="modal-backdrop" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+        <div class="modal-window">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <span class="auth-icon-lg">🔐</span>
+                    <div>
+                        <h3 id="auth-modal-title">Sign In / Create Account</h3>
+                        <p>Real-time database storage with live Supabase Cloud synchronization</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close-modal" id="btn-close-auth" aria-label="Close Auth Modal">✕</button>
+            </div>
+
+            <div class="modal-body-content" style="padding: 1.5rem;">
+                <!-- Cloud Storage Verification Banner -->
+                <div class="cloud-storage-notice">
+                    <span class="cloud-icon">☁️</span>
+                    <span><strong>Live Cloud Storage:</strong> All accounts and orders are saved in our database and dual-synced to Supabase Cloud PostgreSQL.</span>
+                </div>
+
+                <!-- Tabs: Sign In vs Register Patient vs Register Pharmacist -->
+                <div class="auth-tabs" role="tablist">
+                    <button type="button" class="auth-tab-btn active" data-authtab="login">Sign In</button>
+                    <button type="button" class="auth-tab-btn" data-authtab="patient-reg">Create Patient Account</button>
+                    <button type="button" class="auth-tab-btn" data-authtab="pharmacist-reg">Register Medical Shop</button>
+                </div>
+
+                <!-- Error Notice -->
+                <div id="auth-error-banner" class="auth-error-banner" hidden></div>
+
+                <!-- TAB 1: Sign In Form -->
+                <form id="auth-login-form" class="auth-form-pane">
+                    <div class="form-fields">
+                        <label class="field-label">
+                            <span>Email Address *</span>
+                            <input type="email" id="login-email" placeholder="e.g. you@example.com" required autocomplete="email">
+                        </label>
+                        <label class="field-label">
+                            <span>Password *</span>
+                            <input type="password" id="login-password" placeholder="••••••••" required autocomplete="current-password">
+                        </label>
+                    </div>
+                    <div class="modal-footer-btns" style="margin-top: 1.25rem;">
+                        <button type="submit" class="btn-primary" style="width: 100%;">Sign In to My Account</button>
+                    </div>
+                </form>
+
+                <!-- TAB 2: Patient Registration -->
+                <form id="auth-patient-reg-form" class="auth-form-pane" hidden>
+                    <div class="form-fields">
+                        <label class="field-label">
+                            <span>Full Name *</span>
+                            <input type="text" id="reg-patient-name" placeholder="e.g. Ramesh Kumar" required autocomplete="name">
+                        </label>
+                        <label class="field-label">
+                            <span>Email Address *</span>
+                            <input type="email" id="reg-patient-email" placeholder="ramesh@example.com" required autocomplete="email">
+                        </label>
+                        <label class="field-label">
+                            <span>Mobile Phone *</span>
+                            <input type="tel" id="reg-patient-phone" placeholder="+91 98765 43210" required autocomplete="tel">
+                        </label>
+                        <label class="field-label">
+                            <span>Create Password *</span>
+                            <input type="password" id="reg-patient-password" placeholder="At least 6 characters" required minlength="6" autocomplete="new-password">
+                        </label>
+                    </div>
+                    <p class="auth-note-text">🔒 Your account is stored in the database so your 30-minute holds, notifications, and profile details are always accessible.</p>
+                    <div class="modal-footer-btns" style="margin-top: 1rem;">
+                        <button type="submit" class="btn-primary" style="width: 100%;">Create Account &amp; Store in Database</button>
+                    </div>
+                </form>
+
+                <!-- TAB 3: Pharmacist Registration -->
+                <form id="auth-pharm-reg-form" class="auth-form-pane" hidden>
+                    <div class="form-fields">
+                        <label class="field-label">
+                            <span>Pharmacist / Manager Name *</span>
+                            <input type="text" id="reg-pharm-name" placeholder="e.g. Ananya Patel (Lead Chemist)" required>
+                        </label>
+                        <label class="field-label">
+                            <span>Work Email Address *</span>
+                            <input type="email" id="reg-pharm-email" placeholder="ananya@pharmacy.com" required>
+                        </label>
+                        <label class="field-label">
+                            <span>Store Phone *</span>
+                            <input type="tel" id="reg-pharm-phone" placeholder="+91 80 4000 1101" required>
+                        </label>
+                        <label class="field-label">
+                            <span>Select Assigned Partner Pharmacy *</span>
+                            <select id="reg-pharm-store" required>
+                                <option value="green-cross">Green Cross Pharmacy (MG Road)</option>
+                                <option value="apollo-lavelle">Apollo Pharmacy 24/7 (Lavelle Road)</option>
+                                <option value="city-care">City Care Medicals & Surgical (Residency Rd)</option>
+                                <option value="st-marys">St. Mary’s Hospital 24/7 Pharmacy</option>
+                                <option value="wellness-ulsoor">Wellness Pharmacy (Ulsoor)</option>
+                                <option value="medplus-infantry">MedPlus Pharmacy (Infantry Rd)</option>
+                            </select>
+                        </label>
+                        <label class="field-label">
+                            <span>Create Password *</span>
+                            <input type="password" id="reg-pharm-password" placeholder="At least 6 characters" required minlength="6">
+                        </label>
+                    </div>
+                    <p class="auth-note-text">🏪 Gives you full access to manage real-time inventory units, medicine prices, and customer counter reservations for this pharmacy.</p>
+                    <div class="modal-footer-btns" style="margin-top: 1rem;">
+                        <button type="submit" class="btn-primary" style="width: 100%;">Register as Pharmacy Partner</button>
+                    </div>
+                </form>
+
+                <!-- Optional Sample Test Accounts Drawer -->
+                <details class="sample-accounts-drawer">
+                    <summary class="sample-accounts-toggle"><span>💡</span> Need sample test credentials? (Click to view)</summary>
+                    <div class="demo-pills-grid" style="margin-top: 0.75rem;">
+                        <button type="button" class="btn-demo-pill" data-demo="patient">
+                            <strong>👤 Sample Patient</strong>
+                            <small>Priya Sharma</small>
+                        </button>
+                        <button type="button" class="btn-demo-pill" data-demo="pharmacist-greencross">
+                            <strong>🏪 Green Cross Chemist</strong>
+                            <small>Rajesh Kumar</small>
+                        </button>
+                        <button type="button" class="btn-demo-pill" data-demo="pharmacist-apollo">
+                            <strong>🏪 Apollo 24/7 Chemist</strong>
+                            <small>Suresh Nair</small>
+                        </button>
+                        <button type="button" class="btn-demo-pill" data-demo="admin">
+                            <strong>🛡️ System Admin</strong>
+                            <small>Dr. Leela (Full Access)</small>
+                        </button>
+                    </div>
+                </details>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 4B: USER ACCOUNT & STORED DATABASE RECORDS                          -->
+    <!-- ========================================================================= -->
+    <div id="user-profile-modal" class="modal-backdrop" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="user-profile-title">
+        <div class="modal-window profile-modal-window">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <span class="auth-icon-lg">👤</span>
+                    <div>
+                        <h3 id="user-profile-title">My Account &amp; Stored Data</h3>
+                        <p>Verified records stored in SQLite and synced to Supabase Cloud</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close-modal" id="btn-close-user-profile" aria-label="Close Profile Modal">✕</button>
+            </div>
+
+            <div class="modal-body-content" style="padding: 1.25rem;">
+                <!-- Cloud Status Banner -->
+                <div class="cloud-sync-status-card">
+                    <div class="cloud-status-left">
+                        <span class="cloud-pulse-icon">⚡</span>
+                        <div>
+                            <strong>Active Database Storage</strong>
+                            <p>Dual-synchronized: SQLite (local) + Supabase Cloud PostgreSQL</p>
+                        </div>
+                    </div>
+                    <span class="badge-live-sync">● Live &amp; Persistent</span>
+                </div>
+
+                <!-- User Details Card -->
+                <div class="profile-details-card">
+                    <div class="profile-card-header">
+                        <div class="profile-avatar-large" id="profile-avatar-display">👤</div>
+                        <div class="profile-identity">
+                            <h4 id="profile-display-name">Loading…</h4>
+                            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                                <span class="role-chip" id="profile-display-role">PATIENT</span>
+                                <span class="user-id-code" id="profile-display-id">usr-…</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-info-grid">
+                        <div class="profile-info-row">
+                            <span class="info-label">📧 Email:</span>
+                            <strong class="info-val" id="profile-display-email">—</strong>
+                        </div>
+                        <div class="profile-info-row">
+                            <span class="info-label">📱 Mobile:</span>
+                            <strong class="info-val" id="profile-display-phone">—</strong>
+                        </div>
+                        <div class="profile-info-row">
+                            <span class="info-label">📅 Member Since:</span>
+                            <strong class="info-val" id="profile-display-joined">—</strong>
+                        </div>
+                        <div class="profile-info-row" id="profile-pharmacy-row" hidden>
+                            <span class="info-label">🏪 Assigned Pharmacy:</span>
+                            <strong class="info-val" id="profile-display-pharmacy">—</strong>
+                        </div>
+                    </div>
+
+                    <div class="profile-actions-bar">
+                        <button type="button" class="btn-subtle" id="btn-toggle-edit-profile">✏️ Edit Name &amp; Phone</button>
+                        <button type="button" class="btn-subtle" id="btn-toggle-raw-json">💾 View Raw Database Record</button>
+                    </div>
+                </div>
+
+                <!-- Collapsible Edit Profile Form -->
+                <form id="profile-edit-form" class="profile-edit-drawer" hidden>
+                    <h5>Update Stored Profile</h5>
+                    <div class="form-fields">
+                        <label class="field-label">
+                            <span>Full Name</span>
+                            <input type="text" id="edit-profile-name" required>
+                        </label>
+                        <label class="field-label">
+                            <span>Mobile Phone</span>
+                            <input type="tel" id="edit-profile-phone" required>
+                        </label>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+                        <button type="submit" class="btn-primary" style="flex: 1;">Save Changes to Database</button>
+                        <button type="button" class="btn-secondary" id="btn-cancel-edit-profile">Cancel</button>
+                    </div>
+                </form>
+
+                <!-- Collapsible Raw Database JSON Inspector -->
+                <div id="profile-raw-json-drawer" class="raw-json-drawer" hidden>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                        <strong style="font-size: 0.85rem; color: #334155;">Database Record (JSON)</strong>
+                        <button type="button" class="btn-copy-json" id="btn-copy-profile-json">📋 Copy</button>
+                    </div>
+                    <pre id="profile-raw-json-content" class="raw-json-view">Loading raw records…</pre>
+                </div>
+
+                <!-- User Holds & Orders History -->
+                <div class="profile-section-title" style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.25rem; margin-bottom: 0.5rem;">
+                    <h4>📦 Stored Reservations &amp; Orders (<span id="profile-holds-count">0</span>)</h4>
+                    <button type="button" class="btn-subtle" id="btn-refresh-profile-holds" style="font-size: 0.75rem;">🔄 Refresh</button>
+                </div>
+                <div id="profile-holds-container" class="profile-holds-container">
+                    <p style="color: #64748b; font-size: 0.9rem;">Loading reservations…</p>
+                </div>
+            </div>
+
+            <div class="modal-footer" style="padding: 1rem 1.25rem; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center;">
+                <button type="button" class="btn-danger-outline" id="btn-profile-signout">Sign Out</button>
+                <button type="button" class="btn-secondary" id="btn-close-profile-bottom">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 5: PATIENT ACTIVE HOLDS VIEW                                        -->
+    <!-- ========================================================================= -->
+    <div id="patient-holds-modal" class="modal-backdrop" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="patient-holds-title">
+        <div class="modal-window">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <span class="holds-icon">📦</span>
+                    <div>
+                        <h3 id="patient-holds-title">My Medicine Reservations</h3>
+                        <p>Track your 30-minute holds and pickup statuses</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close-modal" id="btn-close-patient-holds" aria-label="Close Holds Modal">✕</button>
+            </div>
+            <div class="modal-body-content" style="padding: 1.5rem;">
+                <div id="patient-holds-list" class="holds-list">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- MODAL 6: ADMIN USER MANAGEMENT VIEW                                       -->
+    <!-- ========================================================================= -->
+    <div id="admin-modal" class="modal-backdrop" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="admin-title">
+        <div class="modal-window" style="max-width: 780px;">
+            <div class="modal-header">
+                <div class="modal-title-wrap">
+                    <span class="admin-icon">🛡️</span>
+                    <div>
+                        <h3 id="admin-title">Admin Control Panel: Users & Roles</h3>
+                        <p>Role-Based Access Control Audit & User Registry</p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close-modal" id="btn-close-admin" aria-label="Close Admin Modal">✕</button>
+            </div>
+            <div class="modal-body-content" style="padding: 1.5rem;">
+                <p style="font-size: 0.85rem; color: #64748b; margin-top: 0;">Verified cryptographic JWT tokens grant access to specific roles across patients, pharmacists, and medical administrators.</p>
+                <div style="overflow-x: auto;">
+                    <table class="admin-users-table" id="admin-users-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Assigned Store</th>
+                                <th>Account ID</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-users-tbody">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-brand-wrap">
+                <a class="brand footer-brand" href="#top">
+                    <span class="brand-mark">✚</span>
+                    <span>med<span class="brand-light">near</span></span>
+                </a>
+                <p>Empowering patients and local pharmacies with transparency and care.</p>
+            </div>
+            <div class="footer-links">
+                <div>
+                    <strong>For Patients</strong>
+                    <ul>
+                        <li><a href="#search-section">Find Medicines</a></li>
+                        <li><a href="#" id="footer-open-scanner">Prescription Scanner</a></li>
+                        <li><a href="#how-it-works">Generic Substitutes</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <strong>For Medical Shops</strong>
+                    <ul>
+                        <li><a href="#" id="footer-switch-store">Chemist Dashboard</a></li>
+                        <li>Stock data is not connected</li>
+                        <li>Call pharmacies to confirm orders</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="footer-copyright">
+            <span>© 2026 MedNear · Connecting Healthcare, Closer to Home</span>
+            <span>Nearby listings use OpenStreetMap data. Stock and delivery are unverified.</span>
+        </div>
+    </footer>
+
+    <!-- ========================================================================= -->
+    <!-- FLOATING AI CLINICAL ASSISTANT & HEALTH CHATBOT                           -->
+    <!-- ========================================================================= -->
+    <div class="ai-chat-widget-container" id="ai-chat-widget-container">
+        <!-- Floating Chat Launcher Button -->
+        <button type="button" class="ai-chat-launcher" id="ai-chat-launcher" aria-label="Open MedNear AI Assistant" title="Ask MedNear AI about tablets, stock & genetics">
+            <span class="ai-launcher-icon">🤖</span>
+            <span class="ai-launcher-pulse"></span>
+            <span class="ai-launcher-badge">1</span>
+            <div class="ai-launcher-tooltip">
+                <span class="tooltip-title">Ask MedNear AI 💬</span>
+                <span class="tooltip-desc">Check tablet stock & safety</span>
+            </div>
+        </button>
+
+        <!-- Floating Chatbot Window / Drawer -->
+        <div class="ai-chat-window" id="ai-chat-window" hidden aria-hidden="true" role="dialog" aria-labelledby="ai-chat-title">
+            <div class="ai-chat-header">
+                <div class="ai-chat-header-info">
+                    <div class="ai-chat-avatar-wrap">
+                        <span class="ai-chat-avatar-emoji">🤖</span>
+                        <span class="ai-chat-status-dot" title="Connected to live database"></span>
+                    </div>
+                    <div class="ai-chat-meta">
+                        <div class="ai-chat-title-row">
+                            <h3 id="ai-chat-title">MedNear Clinical AI</h3>
+                            <span class="ai-verified-tag">PMC5570547</span>
+                        </div>
+                        <p class="ai-chat-status-text">Live stock checks · Precision PGx · Health awareness</p>
+                    </div>
+                </div>
+                <div class="ai-chat-header-actions">
+                    <button type="button" class="ai-header-btn" id="ai-btn-clear" title="Clear conversation" aria-label="Clear chat">🔄</button>
+                    <button type="button" class="ai-header-btn" id="ai-btn-expand" title="Maximize / Restore" aria-label="Maximize chat">⛶</button>
+                    <button type="button" class="ai-header-btn" id="ai-btn-close" title="Close AI Chatbot" aria-label="Close chat">✕</button>
+                </div>
+            </div>
+
+            <!-- Quick Suggestion Starter Chips Bar -->
+            <div class="ai-chat-quick-bar" id="ai-chat-quick-bar">
+                <div class="quick-bar-heading">
+                    <span>💡 Popular Awareness & Stock Checks:</span>
+                </div>
+                <div class="quick-chips-scroll" id="ai-quick-chips">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+
+            <!-- Chat Stream / Conversation Area -->
+            <div class="ai-chat-messages" id="ai-chat-messages" role="log" aria-live="polite">
+                <!-- Dynamically populated -->
+            </div>
+
+            <!-- Typing Indicator -->
+            <div class="ai-typing-indicator" id="ai-typing-indicator" hidden>
+                <div class="ai-typing-avatar">🤖</div>
+                <div class="ai-typing-bubble">
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                    <span class="dot"></span>
+                </div>
+                <span class="ai-typing-label">Checking live pharmacy stock & clinical records…</span>
+            </div>
+
+            <!-- Chat Input Area -->
+            <div class="ai-chat-input-container">
+                <form class="ai-chat-input-bar" id="ai-chat-form">
+                    <button type="button" class="ai-mic-btn" id="ai-btn-mic" title="Voice search (speak your tablet question)" aria-label="Speak tablet question">
+                        <span class="mic-icon">🎙️</span>
+                    </button>
+                    <textarea 
+                        id="ai-chat-input" 
+                        class="ai-chat-input" 
+                        placeholder="Ask about any tablet, stock, dosage, or gene risks..." 
+                        rows="1"
+                        required
+                    ></textarea>
+                    <button type="submit" class="ai-send-btn" id="ai-btn-send" title="Send message" aria-label="Send message">
+                        <span>➤</span>
+                    </button>
+                </form>
+                <div class="ai-chat-disclaimer">
+                    <span>⚠️ Educational health awareness & live inventory checks. For emergencies, call <strong>108 / 112</strong> immediately.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
